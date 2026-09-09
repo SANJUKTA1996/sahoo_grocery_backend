@@ -14,18 +14,6 @@ const getProducts = async (req, res) => {
 };
 
 // GET /api/products/category/:category
-// const getProductsByCategory = async (req, res) => {
-//   try {
-//     const products = await Product.find({ category: req.params.category });
-//     return res.status(200).json({ success: true, products });
-//   } catch (error) {
-//     console.error("Get products by category error:", error);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Failed to fetch products" });
-//   }
-// };
-// GET /api/products/category/:category
 const getProductsByCategory = async (req, res) => {
   try {
     const normalize = (str) =>
@@ -88,4 +76,87 @@ const createProduct = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductsByCategory, createProduct };
+// GET /api/products/:id
+const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    return res.status(200).json({ success: true, product });
+  } catch (error) {
+    console.error("Get product error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch product" });
+  }
+};
+
+// PUT /api/products/:id (admin only)
+const updateProduct = async (req, res) => {
+  try {
+    const { name, category, price, stock, description, image } = req.body || {};
+
+    const updateData = {
+      ...(name !== undefined && { name }),
+      ...(category !== undefined && { category }),
+      ...(price !== undefined && { price: Number(price) }),
+      ...(stock !== undefined && { stock: Number(stock) }),
+      ...(description !== undefined && { description }),
+      ...(image && { image }),
+    };
+
+    const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Product updated", product });
+  } catch (error) {
+    console.error("Update product error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update product" });
+  }
+};
+
+// DELETE /api/products/:id (admin only)
+const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Product deleted" });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to delete product" });
+  }
+};
+
+module.exports = {
+  getProducts,
+  getProductsByCategory,
+  createProduct,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+};
