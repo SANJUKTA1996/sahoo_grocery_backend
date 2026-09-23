@@ -60,18 +60,53 @@ const createOrder = async (req, res) => {
   }
 };
 
+// GET /api/orders/my - orders for the logged-in user only//Custome//
+const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.userId }).sort({
+      orderDate: -1,
+    });
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    console.error("Get my orders error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch orders" });
+  }
+};
+
+// GET /api/orders - all orders (admin)
+// const getAllOrders = async (req, res) => {
+//   try {
+//     const orders = await Order.find()
+//       .populate("user", "name email")
+//       .sort({ orderDate: -1 });
+//     return res.status(200).json({ success: true, orders });
+//   } catch (error) {
+//     console.error("Get all orders error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Failed to fetch orders" });
+//   }
+// };
 // GET /api/orders - all orders (admin)
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate("user", "name email")
+      .populate("user", "name email phone")
       .sort({ orderDate: -1 });
-    return res.status(200).json({ success: true, orders });
+
+    return res.status(200).json({
+      success: true,
+      orders,
+    });
   } catch (error) {
     console.error("Get all orders error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch orders" });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+    });
   }
 };
 
@@ -133,8 +168,8 @@ const updateOrderStatus = async (req, res) => {
 };
 
 module.exports = {
+  getMyOrders,
   createOrder,
-
   getAllOrders,
   getOrderById,
   updateOrderStatus,
