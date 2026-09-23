@@ -159,4 +159,83 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword };
+// GET /api/auth/me
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load profile",
+    });
+  }
+};
+
+// PUT /api/auth/me
+const updateMe = async (req, res) => {
+  try {
+    const { name, mobile, dateOfBirth, gender } = req.body || {};
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
+    }
+
+    if (mobile && !/^[0-9]{10}$/.test(mobile)) {
+      return res.status(400).json({
+        success: false,
+        message: "Mobile number must contain 10 digits",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      {
+        name: name.trim(),
+        mobile: mobile || "",
+        dateOfBirth: dateOfBirth || null,
+        gender: gender || "",
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+    });
+  }
+};
+
+module.exports = { register, login, resetPassword, getMe, updateMe };
