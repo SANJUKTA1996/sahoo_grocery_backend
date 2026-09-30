@@ -77,7 +77,7 @@ const seedProducts = async () => {
     ),
   );
 
-  console.log("Catalog products are ready");
+
 };
 
 module.exports = seedProducts;

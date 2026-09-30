@@ -2,6 +2,7 @@ const express = require("express");
 const {
   createOrder,
   getMyOrders,
+  getBuyAgainProducts,
   getAllOrders,
   getOrderById,
   updateOrderStatus,
@@ -11,6 +12,7 @@ const protect = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.post("/", protect, createOrder);
+router.get("/my/buy-again", protect, getBuyAgainProducts);
 router.get("/my", protect, getMyOrders); // add this line ABOVE "/:orderId"
 router.get("/", getAllOrders); // TODO: protect with admin auth middleware later
 router.get("/:orderId", getOrderById);

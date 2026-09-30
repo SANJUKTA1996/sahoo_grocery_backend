@@ -53,8 +53,6 @@ const seedCategories = async () => {
       await existing.save();
     }
   }
-
-  console.log("Categories are ready");
 };
 
 module.exports = seedCategories;

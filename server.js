@@ -10,6 +10,8 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const offerRoutes = require("./routes/offerRoutes");
+const seedAdmin = require("./config/seedAdmin");
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ app.use(express.json({ limit: "10mb" }));
 connectDB()
   .then(seedCategories)
   .then(seedProducts)
+  .then(seedAdmin)
   .catch((error) => {
     console.error("Database initialization failed:", error);
     process.exit(1);
@@ -33,6 +36,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/offers", offerRoutes);
 
 // Test API
 app.get("/", (req, res) => {

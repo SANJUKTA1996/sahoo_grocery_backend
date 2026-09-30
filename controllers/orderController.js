@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 
 const generateOrderId = () =>
   `ORD${Math.floor(100000 + Math.random() * 900000)}`;
@@ -39,7 +40,10 @@ const createOrder = async (req, res) => {
       user: req.userId,
       orderId: generateOrderId(),
       transactionId,
-      items,
+      items: items.map((item) => ({
+        ...item,
+        productId: item.productId || item._id || item.id,
+      })),
       address,
       subtotal,
       deliveryFee,
@@ -57,6 +61,83 @@ const createOrder = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to create order" });
+  }
+};
+
+// GET /api/orders/my/buy-again - available products from the current user's order history
+const getBuyAgainProducts = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      user: req.userId,
+      status: { $ne: "Cancelled" },
+    })
+      .select("items orderDate")
+      .sort({ orderDate: -1 })
+      .lean();
+
+    const normalizeName = (name = "") => name.trim().toLowerCase();
+    const purchasesById = new Map();
+    const purchasesByName = new Map();
+
+    orders.forEach((order) => {
+      (order.items || []).forEach((item) => {
+        const purchase = {
+          quantity: Number(item.qty || 0),
+          lastPurchasedAt: order.orderDate,
+        };
+        const productId = item.productId || item.id || item._id;
+        const nameKey = normalizeName(item.name);
+
+        if (productId) {
+          const existing = purchasesById.get(String(productId)) || {
+            quantity: 0,
+            lastPurchasedAt: null,
+          };
+          existing.quantity += purchase.quantity;
+          existing.lastPurchasedAt ||= purchase.lastPurchasedAt;
+          purchasesById.set(String(productId), existing);
+        } else if (nameKey) {
+          const existing = purchasesByName.get(nameKey) || {
+            quantity: 0,
+            lastPurchasedAt: null,
+          };
+          existing.quantity += purchase.quantity;
+          existing.lastPurchasedAt ||= purchase.lastPurchasedAt;
+          purchasesByName.set(nameKey, existing);
+        }
+      });
+    });
+
+    const products = await Product.find({ stock: { $gt: 0 } }).lean();
+    const recommendations = products
+      .map((product) => {
+        const purchase =
+          purchasesById.get(String(product._id)) ||
+          purchasesByName.get(normalizeName(product.name));
+
+        return purchase
+          ? {
+              ...product,
+              purchaseCount: purchase.quantity,
+              lastPurchasedAt: purchase.lastPurchasedAt,
+            }
+          : null;
+      })
+      .filter(Boolean)
+      .sort(
+        (first, second) =>
+          second.purchaseCount - first.purchaseCount ||
+          new Date(second.lastPurchasedAt) - new Date(first.lastPurchasedAt),
+      )
+      .slice(0, 8);
+
+    return res.status(200).json({ success: true, products: recommendations });
+  } catch (error) {
+    console.error("Get buy-again products error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch previously purchased products",
+    });
   }
 };
 
@@ -169,6 +250,7 @@ const updateOrderStatus = async (req, res) => {
 
 module.exports = {
   getMyOrders,
+  getBuyAgainProducts,
   createOrder,
   getAllOrders,
   getOrderById,

@@ -15,13 +15,15 @@ const signToken = (user) =>
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body || {};
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res
         .status(400)
         .json({ success: false, message: "All fields are required" });
     }
-    if (!EMAIL_REGEX.test(email)) {
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res
         .status(400)
         .json({ success: false, message: "Please enter a valid email" });
@@ -33,17 +35,19 @@ const register = async (req, res) => {
       });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Email already registered" });
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account already exists with this email. Use a different email.",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: "user",
     });
@@ -62,10 +66,85 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account already exists with this email. Use a different email.",
+      });
+    }
     console.error("Register error:", error);
     return res
       .status(500)
       .json({ success: false, message: "Registration failed" });
+  }
+};
+
+const createAdminAccount = async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+    const normalizedName = typeof name === "string" ? name.trim() : "";
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+
+    if (!normalizedName || !normalizedEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required",
+      });
+    }
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email",
+      });
+    }
+    if (password.length < 12) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin password must be at least 12 characters",
+      });
+    }
+
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account already exists with this email. Use a different email.",
+      });
+    }
+
+    const user = await User.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      password: await bcrypt.hash(password, 12),
+      role: "admin",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Admin account created successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account already exists with this email. Use a different email.",
+      });
+    }
+    console.error("Create admin account error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create admin account",
+    });
   }
 };
 
@@ -238,4 +317,11 @@ const updateMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword, getMe, updateMe };
+module.exports = {
+  register,
+  login,
+  createAdminAccount,
+  resetPassword,
+  getMe,
+  updateMe,
+};
