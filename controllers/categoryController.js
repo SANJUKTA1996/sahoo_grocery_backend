@@ -66,4 +66,27 @@ const createCategory = async (req, res) => {
   }
 };
 
-module.exports = { getCategories, getCategoryBySlug, createCategory };
+const deleteCategory = async (req, res) => {
+  try {
+    const category = await Category.findOneAndDelete({ slug: req.params.slug });
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Category deleted" });
+  } catch (error) {
+    console.error("Delete category error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to delete category" });
+  }
+};
+
+module.exports = {
+  getCategories,
+  getCategoryBySlug,
+  createCategory,
+  deleteCategory,
+};

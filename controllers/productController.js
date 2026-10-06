@@ -1,5 +1,4 @@
 const Product = require("../models/Product");
-const Category = require("../models/Category");
 
 // GET /api/products
 const getProducts = async (req, res) => {
@@ -65,17 +64,6 @@ const createProduct = async (req, res) => {
       description,
       image, // base64 string, stored as-is
     });
-
-    const categoryRecord = await Category.findOne({ name: category });
-    if (categoryRecord) {
-      const firstProduct = await Product.findOne({ category }).sort({
-        createdAt: 1,
-      });
-      if (firstProduct && String(firstProduct._id) === String(product._id)) {
-        categoryRecord.image = image;
-        await categoryRecord.save();
-      }
-    }
 
     return res
       .status(201)

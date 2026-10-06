@@ -99,10 +99,10 @@ const createAdminAccount = async (req, res) => {
         message: "Please enter a valid email",
       });
     }
-    if (password.length < 12) {
+    if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: "Admin password must be at least 12 characters",
+        message: "Admin password must be at least 6 characters",
       });
     }
 

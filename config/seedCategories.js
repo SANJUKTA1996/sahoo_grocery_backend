@@ -19,7 +19,6 @@ const categories = [
   ["Chocolates", "chocolates", "chocolate.jpg"],
   ["Sugar", "sugar", "sugar.jpg"],
   ["Flowers", "flowers", "marigold.jpg"],
-  ["Fruits", "fruits", "dryfruit.webp"],
 ];
 
 const getAssetDataUrl = (fileName) => {
